@@ -24,8 +24,8 @@
     "workbox-webpack-plugin": "^6.5.4"
   },
   "scripts": {
-    "dev": "rm -rf dist-local; webpack serve --hot --progress --config webpack.config.cjs",
-    "build": "rm -rf dist-acc && NODE_ENV=production webpack --config webpack.config.cjs",
+    "dev": "rm -rf dist; webpack serve --hot --progress --config webpack.config.cjs",
+    "build": "rm -rf dist && NODE_ENV=production webpack --config webpack.config.cjs",
     "start": "react-scripts start",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
