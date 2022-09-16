@@ -9,7 +9,7 @@ const config = {
 	entry: path.resolve(__dirname, 'src/index.jsx'),
 	devtool: isProduction ? false : 'eval-source-map',
 	output: {
-		path: path.resolve(__dirname, 'dist'),
+		path: path.resolve(__dirname, isProduction ? 'dist' : 'dev'),
 		filename: 'index.js',
 	},
 	module: {
