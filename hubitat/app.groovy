@@ -158,6 +158,11 @@ def tick(data) {
         }
     }
     
+    // fake active schedule
+    isScheduleDemand = true
+    state.demand.fromScheduleTemperature = 19
+    
+    
     if (!isScheduleDemand) {
         state.userTargetTemperature = null
     }
@@ -211,13 +216,13 @@ def updated() {
 def initialize() {
     unschedule()
     def heatingSchedule =  [
-        [day: 0, targetTemperature: 19, start: [hour: 18], end: [hour: 22]],
-        [day: 1, targetTemperature: 19, start: [hour: 18], end: [hour: 22]],
-        [day: 2, targetTemperature: 19, start: [hour: 18], end: [hour: 22]],
-        [day: 3, targetTemperature: 19, start: [hour: 18], end: [hour: 22]],
-        [day: 4, targetTemperature: 19, start: [hour: 18], end: [hour: 22]],
-        [day: 5, targetTemperature: 19, start: [hour: 18], end: [hour: 22]],
-        [day: 6, targetTemperature: 19, start: [hour: 18], end: [hour: 22]],
+        [day: 0, targetTemperature: 19, start: [hour: 18], end: [hour: 23]],
+        [day: 1, targetTemperature: 19, start: [hour: 18], end: [hour: 23]],
+        [day: 2, targetTemperature: 19, start: [hour: 18], end: [hour: 23]],
+        [day: 3, targetTemperature: 19, start: [hour: 18], end: [hour: 23]],
+        [day: 4, targetTemperature: 19, start: [hour: 18], end: [hour: 23]],
+        [day: 5, targetTemperature: 19, start: [hour: 18], end: [hour: 23]],
+        [day: 6, targetTemperature: 19, start: [hour: 18], end: [hour: 23]],
     ]
     
     log.debug(heatingSchedule)
