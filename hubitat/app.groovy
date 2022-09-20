@@ -15,9 +15,6 @@ preferences {
 	//page(name: "mainPage")
 }
 
-
-heatingSchedule = [day = 0, start = [hour = 18, minute = 0], end = [hour = 20, minute = 0], targetTemperature = 19]
-
 def selectDevices() {
     log.debug("selectDevices")
     
@@ -30,55 +27,6 @@ def selectDevices() {
 			input "switch", "capability.switch", title: "Select Switch", submitOnChange: false, required: true, multiple: false
 		}
 	}
-
-//    return dynamicPage(
-//        name: "selectDevices",
-//        title: "Select your Devices",
-//        install: true,
-//        uninstall: true
-//    ) {
-//        
-//    }
-
-
-//	def errorMsg = ""
-//	if (devices == [:]) {
-//		errorMsg = "There were no devices from YALE"
-//	}
-//	def newDevices = [:]
-//    if (logEnable) log.debug "select devices, ${devices}"
-//	devices.each {
-//    	//log.debug "select devices each ${it.value.deviceId} - ${it.value.alias} - model ${it.value.deviceModel}"
-//		def isChild = getChildDevice(it.value.deviceId) // deviceId changed to dni so dont add twice
-//		if (!isChild) {
-//        	//log.debug "select devices, each !ischild ${it.value.alias} - ${it.value.deviceid}" //value.
-//			newDevices["${it.value.deviceId}"] = "${it.value.alias} \n model ${it.value.deviceModel}"
-//            //log.debug "select devices, each !ischild $newDevices"
-//		}
-//	}
-//	if (newDevices == [:]) {
-//		errorMsg = "No new devices to add."
-//		}
-//	settings.selectedDevices = null
-//	def DevicesMsg = "Token is ${state.Token}\n\r" +
-//		"TAP below to see the list of devices available select the ones you want to connect to " +
-//		"SmartThings.\n\r\n\rPress DONE when you have selected the devices you " +
-//		"wish to add, thenpress DONE again to install the devices.  Press	<	" +
-//		"to return to the previous page."
-//	return dynamicPage(
-//		name: "selectDevices", 
-//		title: "Select Your Devices", 
-//		install: true,
-//		uninstall: true) {
-//		section(errorMsg){} //new {}
-//		section(DevicesMsg) {
-//			input "selectedDevices", "enum",
-//			required:false, 
-//			multiple:true, 
-//			title: "Select Devices (${newDevices.size() ?: 0} found)",
-//			options: newDevices
-//		}
-//	}
 }
 
 def handler(evt) {
@@ -107,6 +55,7 @@ def mainPage() {
 
 mappings {
     path("/variable") { action: [ GET: "renderGetVariableResponse", POST: "doSetVariable", OPTIONS: "doOptions" ] }
+    path("/room") { action: [ GET: "renderRoomResponse", POST: "doSetRoom", OPTIONS: "doOptions" ] }
     path("/static/index.html") { action: [ GET: "renderDashboard" ] }
     path("/static/dashboard.js") { action: [ GET: "renderDashboardJS" ] }
 }
@@ -147,60 +96,105 @@ def doSetVariable() {
     render data: {}, status: 200;
 }
 
+def doSetRoom() {
+    def body = parseJson(request.body)
+
+    if (body.targetTemperature) {
+        state.userTargetTemperature = body.targetTemperature
+    }
+    
+    tick()
+
+    render status: 200
+}
+
 def doOptions() {
     render data: "", status: 200;
+}
+
+def renderRoomResponse() {
+    data = "{\"temperature\":${getCurrentRoomTemperature()},\"humidity\":${getCurrentRoomHumidity()},\"targetTemperature\":${getTargetTemperature()},\"demand\":${getCurrentDemandState()}}"
+    //data = [temperature:17.25,humidity:66,targetTemperature:21.5]
+    
+    render data: data, contentType: "application/json", status: 200
+}
+
+def getCurrentRoomHumidity() {
+    return settings.temperatureSensor.currentValue("humidity")
+}
+
+def getCurrentRoomTemperature() {
+    return settings.temperatureSensor.currentValue("temperature")
+}
+
+def getTargetTemperature() {
+    return state.targetTemperature
+}
+
+def getCurrentDemandState() {
+    return settings.switch.currentValue("switch") == "on"
+}
+
+def setHeatDemand(demand) {
+    if (demand) {
+        settings.switch.on()
+    } else {
+        settings.switch.off()
+    }
 }
 
 def tick(data) {
     now = new Date()
     dayOfWeek = now[Calendar.DAY_OF_WEEK]
     
+    isScheduleDemand = false
+    
     state.heatingSchedule.each{ scheduleItem -> 
         if (scheduleItem.day == dayOfWeek) {
             if (now.getHours() >= scheduleItem.start.hour && now.getHours() < scheduleItem.end.hour) {
-                state.demand.fromSchedule = true
+                isScheduleDemand = true
                 state.demand.fromScheduleTemperature = scheduleItem.targetTemperature
-            } else {
-                state.demand.fromSchedule = false
             }
         }
     }
     
-    def demandState = settings.switch.currentValue("switch") == "on"
-    
-    def currentTemperature = settings.temperatureSensor.currentValue("temperature")
-    
-    def shouldDemand = state.demand.fromSchedule && state.demand.fromThermostat
-    
-    def needsDemandChange = shouldDemand == demandState
-        
-    if (state.demand.scheduleTemperature < currentTemperature) {
-        state.demand.fromThermostat = false
+    if (!isScheduleDemand) {
+        state.userTargetTemperature = null
     }
+    
+    log.debug(state.userTargetTemperature)
+    
+    def targetTemperature = state.demand.fromScheduleTemperature
+    if (state.userTargetTemperature > 0) {
+        targetTemperature = state.userTargetTemperature
+    }
+    state.targetTemperature = targetTemperature
+    
+    def currentTemperature = getCurrentRoomTemperature()
+
+    state.demand.fromSchedule = isScheduleDemand
+    state.demand.fromThermostat = currentTemperature < targetTemperature
+ 
+    def currentDemandState = getCurrentDemandState()
+    def shouldDemand = state.demand.fromSchedule && state.demand.fromThermostat
+    def needsDemandChange = shouldDemand != currentDemandState
     
     log.debug(state.demand)
-    log.debug("demandState: ${demandState}")
+    log.debug("currentDemandState: ${currentDemandState}")
     log.debug("currentTemperatue: ${currentTemperature}")
     log.debug("shouldDemand: ${shouldDemand}")
+    log.debug("needsDemandChange: ${needsDemandChange}")
     
-
     if (needsDemandChange) {
+        log.debug("needs to change")
         if (shouldDemand) {
-            settings.switch.on()
+            log.debug("switching on")
+            setHeatDemand(true)
         } else {
-            settings.switch.off()
+            log.debug("switching off")
+            setHeatDemand(false)
         }
     }
-
-
-    
-//    def sw = getChildDevice(settings.switch.deviceNetworkId)
-//    log.debug("settings.switch: ${settings.switch.deviceNetworkId}")
-//    log.debug("settings.switch: ${settings.switch.currentValue("switch")}")
-//    log.debug("sw: ${sw}")
-//    log.debug(sw.type)
-//    addChildDevice("hubitat", "sys", "AB53")
-//    log.debug(getAllChildDevices())
 }
 
 def installed() {
@@ -215,11 +209,15 @@ def updated() {
 }
 
 def initialize() {
-    // addChildApp(String namespace, String name, String label, Map properties = null)
     unschedule()
     def heatingSchedule =  [
-        [day: 0, targetTemperature: 19, start: [hour: 18], end: [hour: 20]],
-        [day: 3, targetTemperature: 19, start: [hour: 11], end: [hour: 23]],
+        [day: 0, targetTemperature: 19, start: [hour: 18], end: [hour: 22]],
+        [day: 1, targetTemperature: 19, start: [hour: 18], end: [hour: 22]],
+        [day: 2, targetTemperature: 19, start: [hour: 18], end: [hour: 22]],
+        [day: 3, targetTemperature: 19, start: [hour: 18], end: [hour: 22]],
+        [day: 4, targetTemperature: 19, start: [hour: 18], end: [hour: 22]],
+        [day: 5, targetTemperature: 19, start: [hour: 18], end: [hour: 22]],
+        [day: 6, targetTemperature: 19, start: [hour: 18], end: [hour: 22]],
     ]
     
     log.debug(heatingSchedule)
