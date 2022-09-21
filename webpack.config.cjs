@@ -56,6 +56,10 @@ const config = {
 		devMiddleware: {
 			writeToDisk: true,
 		},
+		static: {
+			publicPath: '/apps/api/107/',
+			directory: path.resolve(__dirname, 'dev')
+		}
 	},
 }
 
