@@ -25,6 +25,7 @@ def selectDevices() {
 
             input "temperatureSensor", "capability.temperatureMeasurement", title: "Select Temperature Sensor", submitOnChange: false, required: true, multiple: false
 			input "switch", "capability.switch", title: "Select Switch", submitOnChange: false, required: true, multiple: false
+			input "dashboard", "capability.variable", title: "Select Dashboard", submitOnChange: false, required: true, multiple: false
 		}
 	}
 }
@@ -54,7 +55,6 @@ def mainPage() {
 }
 
 mappings {
-    path("/variable") { action: [ GET: "renderGetVariableResponse", POST: "doSetVariable", OPTIONS: "doOptions" ] }
     path("/room") { action: [ GET: "renderRoomResponse", POST: "doSetRoom", OPTIONS: "doOptions" ] }
     path("/static/index.html") { action: [ GET: "renderDashboard" ] }
     path("/static/dashboard.js") { action: [ GET: "renderDashboardJS" ] }
@@ -69,7 +69,7 @@ def renderDashboardJS() {
         if (response.status != 200) {
             render contentType: "text/plain; charset=utf-8", data: "Error: Failed to acquire source", status: response.status
         }
-        //log.debug(response.data.getText())
+
         render contentType: "text/plain; charset=utf-8", data: response.data.getText(), status: 200
     }
 }
@@ -77,23 +77,6 @@ def renderDashboardJS() {
 def renderDashboard() {
     data = "<html><head><script defer=\"defer\" src=\"/apps/api/107/static/dashboard.js?access_token=63fd4650-b3b0-4d3b-b1d2-694e158692ec\"></script></head><body><div id=\"root\"></div></body></html>";
     render contentType: "text/html", data: data, status: 200;
-}
-
-def renderGetVariableResponse() {
-    def vars = getAllGlobalVars()
-    variableName = params["variableName"]
-    variableContent = vars[variableName]
-    variableValue = state[variableName]
-    data = "{\"value\":${variableValue}}";
-    render params: responseParams, data: data, status: 200;
-}
-
-def doSetVariable() {
-    variableName = params["variableName"]
-    variableValue = params["variableValue"] as Double
-    setGlobalVar(variableName, variableValue)
-    state[variableName] = variableValue as Double
-    render data: {}, status: 200;
 }
 
 def doSetRoom() {
@@ -159,12 +142,14 @@ def tick(data) {
     }
     
     // fake active schedule
-    isScheduleDemand = true
-    state.demand.fromScheduleTemperature = 19
+//    isScheduleDemand = true
+//    state.demand.fromScheduleTemperature = 19
     
     
-    if (!isScheduleDemand) {
+    
+    if (!isScheduleDemand && state.demand.fromScheduleTemperature != null) {
         state.userTargetTemperature = null
+        state.demand.fromScheduleTemperature = null
     }
     
     log.debug(state.userTargetTemperature)
@@ -189,7 +174,12 @@ def tick(data) {
     log.debug("currentTemperatue: ${currentTemperature}")
     log.debug("shouldDemand: ${shouldDemand}")
     log.debug("needsDemandChange: ${needsDemandChange}")
-    
+
+    sendEvent(name: "demand-status", value: currentDemandState, type: "heating-control")
+    sendEvent(name: "humidity", value: getCurrentRoomHumidity(), type: "heating-control")
+    sendEvent(name: "temperature", value: getCurrentRoomTemperature(), type: "heating-control")
+    sendEvent(name: "targetTemperature", value: targetTemperature, type: "heating-control")
+
     if (needsDemandChange) {
         log.debug("needs to change")
         if (shouldDemand) {
