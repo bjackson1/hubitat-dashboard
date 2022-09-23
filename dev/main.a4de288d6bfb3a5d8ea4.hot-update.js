@@ -1,0 +1,30 @@
+"use strict";
+/*
+ * ATTENTION: An "eval-source-map" devtool has been used.
+ * This devtool is neither made for production nor for readable output files.
+ * It uses "eval()" calls to create a separate source file with attached SourceMaps in the browser devtools.
+ * If you are trying to read the output file, select a different devtool (https://webpack.js.org/configuration/devtool/)
+ * or disable the default devtool with "devtool: false".
+ * If you are looking for production-ready output files, see mode: "production" (https://webpack.js.org/configuration/mode/).
+ */
+self["webpackHotUpdatesrc"]("main",{
+
+/***/ "./src/components/WebSocketTest.jsx":
+/*!******************************************!*\
+  !*** ./src/components/WebSocketTest.jsx ***!
+  \******************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var core_js_modules_es_array_map_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! core-js/modules/es.array.map.js */ \"./node_modules/core-js/modules/es.array.map.js\");\n/* harmony import */ var core_js_modules_es_array_map_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_array_map_js__WEBPACK_IMPORTED_MODULE_0__);\n/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react */ \"./node_modules/react/index.js\");\n/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_1__);\nObject(function webpackMissingModule() { var e = new Error(\"Cannot find module '../hooks/use-'\"); e.code = 'MODULE_NOT_FOUND'; throw e; }());\n\n\n\n\nvar WebSocketDemo = function WebSocketDemo() {\n  //Public API that will echo messages sent to it back to the client\n  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement(\"div\", {\n    style: {\n      color: 'black'\n    }\n  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement(\"button\", {\n    onClick: handleClickChangeSocketUrl\n  }, \"Click Me to change Socket Url\"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement(\"button\", {\n    onClick: handleClickSendMessage,\n    disabled: readyState !== ReadyState.OPEN\n  }, \"Click Me to send 'Hello'\"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement(\"span\", null, \"The WebSocket is currently \", connectionStatus), lastMessage ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement(\"span\", null, \"Last message: \", lastMessage.data) : null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement(\"ul\", null, messageHistory.map(function (message, idx) {\n    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement(\"span\", {\n      key: idx\n    }, message ? message.data : null);\n  })));\n};\n\n/* harmony default export */ __webpack_exports__[\"default\"] = (WebSocketDemo);//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiLi9zcmMvY29tcG9uZW50cy9XZWJTb2NrZXRUZXN0LmpzeC5qcyIsIm1hcHBpbmdzIjoiOzs7Ozs7O0FBQUE7QUFDQTs7QUFFQSxJQUFNTSxhQUFhLEdBQUcsU0FBaEJBLGFBQWdCLEdBQU07RUFDMUI7RUFFQSxvQkFDRTtJQUFLLEtBQUssRUFBRTtNQUFDQyxLQUFLLEVBQUU7SUFBUjtFQUFaLGdCQUNFO0lBQVEsT0FBTyxFQUFFQztFQUFqQixtQ0FERixlQUlFO0lBQ0UsT0FBTyxFQUFFQyxzQkFEWDtJQUVFLFFBQVEsRUFBRUMsVUFBVSxLQUFLQyxVQUFVLENBQUNDO0VBRnRDLDhCQUpGLGVBVUUsd0dBQWtDQyxnQkFBbEMsQ0FWRixFQVdHQyxXQUFXLGdCQUFHLDJGQUFxQkEsV0FBVyxDQUFDQyxJQUFqQyxDQUFILEdBQW1ELElBWGpFLGVBWUUsdUVBQ0dDLGNBQWMsQ0FBQ0MsR0FBZixDQUFtQixVQUFDWixPQUFELEVBQVVhLEdBQVY7SUFBQSxvQkFDbEI7TUFBTSxHQUFHLEVBQUVBO0lBQVgsR0FBaUJiLE9BQU8sR0FBR0EsT0FBTyxDQUFDVSxJQUFYLEdBQWtCLElBQTFDLENBRGtCO0VBQUEsQ0FBbkIsQ0FESCxDQVpGLENBREY7QUFvQkQsQ0F2QkQ7O0FBeUJBLCtEQUFlVCxhQUFmIiwic291cmNlcyI6WyJ3ZWJwYWNrOi8vc3JjLy4vc3JjL2NvbXBvbmVudHMvV2ViU29ja2V0VGVzdC5qc3g/MjJlZiJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgUmVhY3QsIHsgdXNlU3RhdGUsIHVzZUNhbGxiYWNrLCB1c2VFZmZlY3QgfSBmcm9tICdyZWFjdCc7XG5pbXBvcnQgeyBjb25uZWN0LCBtZXNzYWdlIH0gZnJvbSAnLi4vaG9va3MvdXNlLSdcblxuY29uc3QgV2ViU29ja2V0RGVtbyA9ICgpID0+IHtcbiAgLy9QdWJsaWMgQVBJIHRoYXQgd2lsbCBlY2hvIG1lc3NhZ2VzIHNlbnQgdG8gaXQgYmFjayB0byB0aGUgY2xpZW50XG5cbiAgcmV0dXJuIChcbiAgICA8ZGl2IHN0eWxlPXt7Y29sb3I6ICdibGFjayd9fT5cbiAgICAgIDxidXR0b24gb25DbGljaz17aGFuZGxlQ2xpY2tDaGFuZ2VTb2NrZXRVcmx9PlxuICAgICAgICBDbGljayBNZSB0byBjaGFuZ2UgU29ja2V0IFVybFxuICAgICAgPC9idXR0b24+XG4gICAgICA8YnV0dG9uXG4gICAgICAgIG9uQ2xpY2s9e2hhbmRsZUNsaWNrU2VuZE1lc3NhZ2V9XG4gICAgICAgIGRpc2FibGVkPXtyZWFkeVN0YXRlICE9PSBSZWFkeVN0YXRlLk9QRU59XG4gICAgICA+XG4gICAgICAgIENsaWNrIE1lIHRvIHNlbmQgJ0hlbGxvJ1xuICAgICAgPC9idXR0b24+XG4gICAgICA8c3Bhbj5UaGUgV2ViU29ja2V0IGlzIGN1cnJlbnRseSB7Y29ubmVjdGlvblN0YXR1c308L3NwYW4+XG4gICAgICB7bGFzdE1lc3NhZ2UgPyA8c3Bhbj5MYXN0IG1lc3NhZ2U6IHtsYXN0TWVzc2FnZS5kYXRhfTwvc3Bhbj4gOiBudWxsfVxuICAgICAgPHVsPlxuICAgICAgICB7bWVzc2FnZUhpc3RvcnkubWFwKChtZXNzYWdlLCBpZHgpID0+IChcbiAgICAgICAgICA8c3BhbiBrZXk9e2lkeH0+e21lc3NhZ2UgPyBtZXNzYWdlLmRhdGEgOiBudWxsfTwvc3Bhbj5cbiAgICAgICAgKSl9XG4gICAgICA8L3VsPlxuICAgIDwvZGl2PlxuICApO1xufTtcblxuZXhwb3J0IGRlZmF1bHQgV2ViU29ja2V0RGVtb1xuIl0sIm5hbWVzIjpbIlJlYWN0IiwidXNlU3RhdGUiLCJ1c2VDYWxsYmFjayIsInVzZUVmZmVjdCIsImNvbm5lY3QiLCJtZXNzYWdlIiwiV2ViU29ja2V0RGVtbyIsImNvbG9yIiwiaGFuZGxlQ2xpY2tDaGFuZ2VTb2NrZXRVcmwiLCJoYW5kbGVDbGlja1NlbmRNZXNzYWdlIiwicmVhZHlTdGF0ZSIsIlJlYWR5U3RhdGUiLCJPUEVOIiwiY29ubmVjdGlvblN0YXR1cyIsImxhc3RNZXNzYWdlIiwiZGF0YSIsIm1lc3NhZ2VIaXN0b3J5IiwibWFwIiwiaWR4Il0sInNvdXJjZVJvb3QiOiIifQ==\n//# sourceURL=webpack-internal:///./src/components/WebSocketTest.jsx\n");
+
+/***/ })
+
+},
+/******/ function(__webpack_require__) { // webpackRuntimeModules
+/******/ /* webpack/runtime/getFullHash */
+/******/ !function() {
+/******/ 	__webpack_require__.h = function() { return "59a110077651d74e2375"; }
+/******/ }();
+/******/ 
+/******/ }
+);

@@ -1,5 +1,5 @@
 definition(
-    name: "Brett Test",
+    name: "Central Heating Controller",
     namespace: "brett",
     author: "Brett Jackson",
     description: "test",
@@ -58,6 +58,7 @@ mappings {
     path("/room") { action: [ GET: "renderRoomResponse", POST: "doSetRoom", OPTIONS: "doOptions" ] }
     path("/static/index.html") { action: [ GET: "renderDashboard" ] }
     path("/static/dashboard.js") { action: [ GET: "renderDashboardJS" ] }
+    path("/requestStatusUpdates") { action: [ GET: "renderStatusUpdates" ] }
 }
 
 jsSource = "https://raw.githubusercontent.com/bjackson1/hubitat-dashboard/main/dist/index.js"
@@ -75,7 +76,7 @@ def renderDashboardJS() {
 }
 
 def renderDashboard() {
-    data = "<html><head><script defer=\"defer\" src=\"/apps/api/107/static/dashboard.js?access_token=63fd4650-b3b0-4d3b-b1d2-694e158692ec\"></script></head><body><div id=\"root\"></div></body></html>";
+    data = "<html><head><script defer=\"defer\" src=\"${getFullLocalApiServerUrl()}/static/dashboard.js?access_token=${state.accessToken}\"></script></head><body><div id=\"root\"></div></body></html>";
     render contentType: "text/html", data: data, status: 200;
 }
 
@@ -83,7 +84,8 @@ def doSetRoom() {
     def body = parseJson(request.body)
 
     if (body.targetTemperature) {
-        state.userTargetTemperature = body.targetTemperature
+        state.userTargetTemperature = new Float("${body.targetTemperature}f")
+        log.debug("new user temperature: ${body.targetTemperature} -> ${state.userTargetTemperature}")
     }
     
     tick()
@@ -97,7 +99,6 @@ def doOptions() {
 
 def renderRoomResponse() {
     data = "{\"temperature\":${getCurrentRoomTemperature()},\"humidity\":${getCurrentRoomHumidity()},\"targetTemperature\":${getTargetTemperature()},\"demand\":${getCurrentDemandState()}}"
-    //data = [temperature:17.25,humidity:66,targetTemperature:21.5]
     
     render data: data, contentType: "application/json", status: 200
 }
@@ -118,6 +119,30 @@ def getCurrentDemandState() {
     return settings.switch.currentValue("switch") == "on"
 }
 
+def updateItemStatus(name, value, force = false) {
+    def needsSend = force
+    
+    if ((value != null && state.attributes[name] != value) || force == true) {
+        state.attributes[name] = value
+        needsSend = true
+    }
+    
+    //if (needsSend) {
+        sendEvent(name: name, value: state.attributes[name], type: "heating-control")
+    //}
+}
+
+def renderStatusUpdates() {
+    updateItemStatus("demandStatus", null, true)
+    updateItemStatus("targetTemperature", null, true)
+    updateItemStatus("humidity", null, true)
+    updateItemStatus("temperature", null, true)
+    
+    render data: "{}", contentType: "application/json", status: 200
+}
+
+
+
 def setHeatDemand(demand) {
     if (demand) {
         settings.switch.on()
@@ -126,70 +151,118 @@ def setHeatDemand(demand) {
     }
 }
 
+
 def tick(data) {
     now = new Date()
     dayOfWeek = now[Calendar.DAY_OF_WEEK]
     
-    isScheduleDemand = false
+    scheduledTemperature = state.baselineTemperature
+    scheduleEnd = 0
+    isScheduleActive = false
     
     state.heatingSchedule.each{ scheduleItem -> 
         if (scheduleItem.day == dayOfWeek) {
             if (now.getHours() >= scheduleItem.start.hour && now.getHours() < scheduleItem.end.hour) {
-                isScheduleDemand = true
-                state.demand.fromScheduleTemperature = scheduleItem.targetTemperature
+                scheduledTemperature = scheduleItem.targetTemperature
+                scheduleEnd = scheduleItem.end.hour
+                isScheduleActive = true
             }
         }
     }
     
-    // fake active schedule
-//    isScheduleDemand = true
-//    state.demand.fromScheduleTemperature = 19
-    
-    
-    
-    if (!isScheduleDemand && state.demand.fromScheduleTemperature != null) {
-        state.userTargetTemperature = null
-        state.demand.fromScheduleTemperature = null
-    }
-    
-    log.debug(state.userTargetTemperature)
-    
-    def targetTemperature = state.demand.fromScheduleTemperature
-    if (state.userTargetTemperature > 0) {
-        targetTemperature = state.userTargetTemperature
-    }
-    state.targetTemperature = targetTemperature
-    
-    def currentTemperature = getCurrentRoomTemperature()
+    if (isScheduleActive) {
+        // A schedule is active
+        state.demand.scheduled = [ isActive: true ]
+    } else {
+        // There is no heating scheduled at the moment
 
-    state.demand.fromSchedule = isScheduleDemand
-    state.demand.fromThermostat = currentTemperature < targetTemperature
- 
-    def currentDemandState = getCurrentDemandState()
-    def shouldDemand = state.demand.fromSchedule && state.demand.fromThermostat
-    def needsDemandChange = shouldDemand != currentDemandState
-    
-    log.debug(state.demand)
-    log.debug("currentDemandState: ${currentDemandState}")
-    log.debug("currentTemperatue: ${currentTemperature}")
-    log.debug("shouldDemand: ${shouldDemand}")
-    log.debug("needsDemandChange: ${needsDemandChange}")
-
-    sendEvent(name: "demand-status", value: currentDemandState, type: "heating-control")
-    sendEvent(name: "humidity", value: getCurrentRoomHumidity(), type: "heating-control")
-    sendEvent(name: "temperature", value: getCurrentRoomTemperature(), type: "heating-control")
-    sendEvent(name: "targetTemperature", value: targetTemperature, type: "heating-control")
-
-    if (needsDemandChange) {
-        log.debug("needs to change")
-        if (shouldDemand) {
-            log.debug("switching on")
-            setHeatDemand(true)
-        } else {
-            log.debug("switching off")
-            setHeatDemand(false)
+        // Manage transition to Inactive
+        if (state.demand.scheduled.isActive == true) {
+            // if user set temp then cancel and revert to baseline
+            state.userTargetTemperature = state.baselineTemperature
         }
+
+        state.demand.scheduled = [ isActive: false ]
     }
+    
+    
+    
+    log.debug("scheduledTemperature: ${scheduledTemperature}")
+    log.debug("state.userTargetTemperature: ${state.userTargetTemperature}")
+            
+    state.targetTemperature = Math.max(new Float(scheduledTemperature), new Float(state.userTargetTemperature))
+    def currentTemperature = getCurrentRoomTemperature()
+    def targetTemperatureWithOverrun = state.targetTemperature * 1.02 // add 2%
+    log.debug("targetTemperatureWithOverrun: ${targetTemperatureWithOverrun}")
+    
+    def demandNeeded = false
+    if (targetTemperatureWithOverrun > currentTemperature) {
+        demandNeeded = true
+    }
+    
+    def currentDemandState = getCurrentDemandState()
+    log.debug("demand switch is on: ${currentDemandState}, demand needed: ${demandNeeded}")
+
+    if (currentDemandState == true && demandNeeded == false) {
+        log.debug("setting heat demand to off")
+        settings.switch.off()
+    }
+    
+    if (currentDemandState == false && demandNeeded == true) {
+        log.debug("setting heat demand to on")
+        settings.switch.on()
+    }
+    
+    
+//    log.debug("targetTemperatureWithOverrun: ${targetTemperatureWithOverrun}")
+
+//    // fake active schedule
+////    isScheduleDemand = true
+////    state.demand.fromScheduleTemperature = 19
+//    
+//    if (!isScheduleDemand && state.demand.fromScheduleTemperature != null) {
+//        state.userTargetTemperature = null
+//        state.demand.fromScheduleTemperature = null
+//    }
+//    
+//    log.debug(state.userTargetTemperature)
+//    
+//    def targetTemperature = state.demand.fromScheduleTemperature
+//    if (state.userTargetTemperature > 0) {
+//        targetTemperature = state.userTargetTemperature
+//    }
+//    state.targetTemperature = targetTemperature
+//    
+//    def currentTemperature = getCurrentRoomTemperature()
+//
+//    state.demand.fromSchedule = isScheduleDemand
+//    state.demand.fromThermostat = currentTemperature < targetTemperature
+// 
+//    def currentDemandState = getCurrentDemandState()
+//    def shouldDemand = state.demand.fromSchedule && state.demand.fromThermostat
+//    def needsDemandChange = shouldDemand != currentDemandState
+//    
+//    log.debug(state.demand)
+//    log.debug("currentDemandState: ${currentDemandState}")
+//    log.debug("currentTemperatue: ${currentTemperature}")
+//    log.debug("shouldDemand: ${shouldDemand}")
+//    log.debug("needsDemandChange: ${needsDemandChange}")
+
+    updateItemStatus("demandStatus", currentDemandState)
+    updateItemStatus("targetTemperature", targetTemperature)
+    updateItemStatus("humidity", getCurrentRoomHumidity())
+    updateItemStatus("temperature", getCurrentRoomTemperature())
+
+//    if (needsDemandChange) {
+//        log.debug("needs to change")
+//        if (shouldDemand) {
+//            log.debug("switching on")
+//            setHeatDemand(true)
+//        } else {
+//            log.debug("switching off")
+//            setHeatDemand(false)
+//        }
+//    }
 }
 
 def installed() {
@@ -206,18 +279,23 @@ def updated() {
 def initialize() {
     unschedule()
     def heatingSchedule =  [
-        [day: 0, targetTemperature: 19, start: [hour: 18], end: [hour: 23]],
-        [day: 1, targetTemperature: 19, start: [hour: 18], end: [hour: 23]],
-        [day: 2, targetTemperature: 19, start: [hour: 18], end: [hour: 23]],
-        [day: 3, targetTemperature: 19, start: [hour: 18], end: [hour: 23]],
-        [day: 4, targetTemperature: 19, start: [hour: 18], end: [hour: 23]],
-        [day: 5, targetTemperature: 19, start: [hour: 18], end: [hour: 23]],
-        [day: 6, targetTemperature: 19, start: [hour: 18], end: [hour: 23]],
+        [day: 0, targetTemperature: 19f, start: [hour: 18], end: [hour: 23]],
+        [day: 1, targetTemperature: 19f, start: [hour: 18], end: [hour: 23]],
+        [day: 2, targetTemperature: 19f, start: [hour: 18], end: [hour: 23]],
+        [day: 3, targetTemperature: 19f, start: [hour: 18], end: [hour: 23]],
+        [day: 4, targetTemperature: 19f, start: [hour: 15], end: [hour: 23]],
+        [day: 5, targetTemperature: 19f, start: [hour: 18], end: [hour: 23]],
+        [day: 6, targetTemperature: 19f, start: [hour: 18], end: [hour: 23]],
     ]
     
     log.debug(heatingSchedule)
+    
+    state.baselineTemperature = 12f
+    state.demandTemperature = state.baselineTemperature
     state.heatingSchedule = heatingSchedule
-    state.demand = [] as Map
+    state.demand = [ scheduled: [ isActive: false ] as Map] as Map
+    state.attributes = [:]
+
     
     cronSchedule = "0,5,10,15,20,25,30,35,40,45,50,55 * * ? * *"
     schedule(cronSchedule, tick)
