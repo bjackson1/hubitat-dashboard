@@ -7,7 +7,7 @@ const useSocket = () => {
     const [socketUrl, setSocketUrl] = useState(config.webSocketUrl)
     const [message, setMessage] = useState({})
 
-    const { lastMessage } = useWebSocket(socketUrl)
+    const { lastMessage, readyState } = useWebSocket(socketUrl)
 
     useEffect(() => {
         if (lastMessage !== null) {
@@ -16,7 +16,15 @@ const useSocket = () => {
         }
     }, [lastMessage])
 
-    return { message }
+    const connectionStatus = {
+        [ReadyState.CONNECTING]: 'Connecting',
+        [ReadyState.OPEN]: 'Open',
+        [ReadyState.CLOSING]: 'Closing',
+        [ReadyState.CLOSED]: 'Closed',
+        [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
+      }[readyState];
+
+    return { message, connectionStatus }
 }
 
 export default useSocket
