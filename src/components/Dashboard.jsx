@@ -23,10 +23,10 @@ const Dashboard = () => {
                     <div><Clock /></div>
                 </div>
                 <div className={css.tiles}>
-                    <TemperatureAndHumidity />
+                    {/* <TemperatureAndHumidity />
                     <HeatStatus />
                     <TargetTemperature setTargetTemperature={setTargetTemperature} />
-                    <WebSocketWorker />
+                    <WebSocketWorker /> */}
                     {/* <Boost /> */}
                 </div>
                 <button className={css.refreshButton} onClick={refresh}>&nbsp;</button>
