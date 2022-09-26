@@ -127,9 +127,7 @@ def updateItemStatus(name, value, force = false) {
         needsSend = true
     }
     
-    //if (needsSend) {
-        sendEvent(name: name, value: state.attributes[name], type: "heating-control")
-    //}
+    sendEvent(name: name, value: state.attributes[name], type: "heating-control")
 }
 
 def renderStatusUpdates() {
@@ -159,6 +157,7 @@ def tick(data) {
     scheduledTemperature = state.baselineTemperature
     scheduleEnd = 0
     isScheduleActive = false
+    demandSource = "schedule"
     
     state.heatingSchedule.each{ scheduleItem -> 
         if (scheduleItem.day == dayOfWeek) {
@@ -221,7 +220,7 @@ def tick(data) {
     }
 
     updateItemStatus("demandStatus", currentDemandState)
-    updateItemStatus("targetTemperature", targetTemperature)
+    updateItemStatus("targetTemperature", "{\"temperature\":${targetTemperature},\"source\":\"schedule\"}")
     updateItemStatus("humidity", getCurrentRoomHumidity())
     updateItemStatus("temperature", getCurrentRoomTemperature())
 }
