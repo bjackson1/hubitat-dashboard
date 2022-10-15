@@ -4,7 +4,7 @@ import { StoreContext } from 'storeon/react'
 import useApp from '../hooks/use-app'
 import store from './store'
 
-import { Boost, HeatStatus, TargetTemperature, TemperatureAndHumidity } from './tiles'
+import { Boost, HeatStatus, Reloader, TargetTemperature, TemperatureAndHumidity } from './tiles'
 import Clock from './Clock'
 import WebSocketWorker from './WebSocketWorker'
 
@@ -12,8 +12,6 @@ import css from './Dashboard.module.css'
 
 const Dashboard = () => {
     const { setTargetTemperature } = useApp()
-
-    const refresh = () => window.location.reload()
 
     return (
         <StoreContext.Provider value={store}>
@@ -28,9 +26,8 @@ const Dashboard = () => {
                     <HeatStatus />
                     <TargetTemperature setTargetTemperature={setTargetTemperature} />
                     <TemperatureAndHumidity location="outside" />
-                    {/* <Boost /> */}
+                    <Reloader />
                 </div>
-                <button className={css.refreshButton} onClick={refresh}>&nbsp;</button>
             </div>
         </StoreContext.Provider>
     )
