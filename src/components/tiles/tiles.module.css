@@ -43,7 +43,7 @@
 
 .primaryMetricDisplay {
     display: flex;
-    font-size: max(6vw, 6vh);
+    font-size: max(10vw, 10vh);
     font-weight: bold;
 }
 
