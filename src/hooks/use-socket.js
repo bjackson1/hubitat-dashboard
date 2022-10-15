@@ -1,30 +1,24 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import useWebSocket, { ReadyState } from 'react-use-websocket';
+import { useState, useEffect } from 'react';
+import useWebSocket from 'react-use-websocket';
 import config from '../config'
 
-
 const useSocket = () => {
-    const [socketUrl, setSocketUrl] = useState(config.webSocketUrl)
     const [message, setMessage] = useState({})
 
-    const { lastMessage, readyState } = useWebSocket(socketUrl)
+    const { lastJsonMessage } = useWebSocket(config.webSocketUrl)
 
     useEffect(() => {
-        if (lastMessage !== null) {
-            const data = JSON.parse(lastMessage.data)
-            setMessage(data)
+        if (lastJsonMessage !== null) {
+            if (`${lastJsonMessage?.installedAppId}` === `${config.apiId}`
+                    && lastJsonMessage.type === 'heating-control'
+                    && lastJsonMessage.name === 'status') {
+                const value = JSON.parse(lastJsonMessage.value)
+                setMessage(value)
+            }
         }
-    }, [lastMessage])
+    }, [lastJsonMessage])
 
-    const connectionStatus = {
-        [ReadyState.CONNECTING]: 'Connecting',
-        [ReadyState.OPEN]: 'Open',
-        [ReadyState.CLOSING]: 'Closing',
-        [ReadyState.CLOSED]: 'Closed',
-        [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
-      }[readyState];
-
-    return { message, connectionStatus }
+    return { message }
 }
 
 export default useSocket

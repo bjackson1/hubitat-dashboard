@@ -57,7 +57,7 @@ const config = {
 			writeToDisk: true,
 		},
 		static: {
-			publicPath: '/apps/api/107/',
+			publicPath: '/apps/api/131/static/index.html',
 			directory: path.resolve(__dirname, 'dev')
 		}
 	},

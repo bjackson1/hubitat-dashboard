@@ -1,38 +1,42 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { useStoreon } from 'storeon/react'
 
 import { TileWrapper } from '.'
 
 import tilesCss from './tiles.module.css'
-import css from './TargetTemperature.module.css'
 
 const TargetTemperature = ({ setTargetTemperature }) => {
-    const { targetTemperature } = useStoreon('targetTemperature')
+    const { room } = useStoreon('room')
+    const title = 'Target Temperature'
     
     const [requestedTemperature, setRequestedTemperature] = useState(null)
-    // useEffect(() => setRequestedTemperature(targetTemperature?.temperature), [targetTemperature?.temperature])
+    const [timeoutIds, setTimeoutIds] = useState([])
 
-    if (!targetTemperature) return <TileWrapper>Loading...</TileWrapper>
+    if (!room) return <TileWrapper title={title}>Loading...</TileWrapper>
 
-    const { temperature, source } = targetTemperature
+    const { targetTemperature } = room.demand
 
-    const requesting = !requestedTemperature || temperature === requestedTemperature ? null : '...'
+    const requesting = !requestedTemperature || targetTemperature === requestedTemperature ? null : '...'
+    const newTemperature = requestedTemperature || targetTemperature
 
     const setNewTemperature = newTemperature => {
         setRequestedTemperature(newTemperature)
         setTargetTemperature(newTemperature)
+
+        timeoutIds.forEach(clearTimeout)
+        const id = setTimeout(() => setRequestedTemperature(null), 10000)
+        setTimeoutIds([id, ...timeoutIds])
     }
 
-    const decrementTemperature = () => setNewTemperature(temperature - 0.5)
-    const incrementTemperature = () => setNewTemperature(temperature + 0.5)
+    const decrementTemperature = () => setNewTemperature(newTemperature - 0.5)
+    const incrementTemperature = () => setNewTemperature(newTemperature + 0.5)
 
-    return <TileWrapper>
-        <div className={tilesCss.primaryMetricDisplay}>{temperature}<sup>°C</sup>{requesting}</div>
+    return <TileWrapper title={title}>
+        <div className={tilesCss.primaryMetricDisplay}>{newTemperature}<sup>°C</sup>{requesting}</div>
         <div className={tilesCss.buttons}>
             <button className={tilesCss.button} onClick={decrementTemperature}>-</button>
             <button className={tilesCss.button} onClick={incrementTemperature}>+</button>
         </div>
-        <div className={css.source}>Set by {source} until 00:00</div>
     </TileWrapper>
 }
 

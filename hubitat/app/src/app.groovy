@@ -1,5 +1,5 @@
 definition(
-    name: "Central Heating Controller",
+    name: "Central Heating Controller - DEV",
     namespace: "brett",
     author: "Brett Jackson",
     description: "test",
@@ -12,21 +12,27 @@ definition(
 
 preferences {
     page(name: "selectDevices", title: "Select Devices", nextPage:"mainPage", content:"selectDevices", uninstall: true, install: true)
-	//page(name: "mainPage")
+	page(name: "mainPage", title: "Token", content: "mainPage")
 }
 
 def selectDevices() {
     log.debug("selectDevices")
+    
+    def uri = getFullLocalApiServerUrl() + "/static/index.html?access_token=${state.accessToken}"
     
     return dynamicPage(name: "mainPage", title: "Setup Room", install: true, uninstall: true) {
 		section {
 			input "thisName", "text", title: "Name this Contact-Motion", submitOnChange: false
 			if(thisName) app.updateLabel("$thisName")
 
-            input "temperatureSensor", "capability.temperatureMeasurement", title: "Select Temperature Sensor", submitOnChange: false, required: true, multiple: false
+            input "temperatureSensorRoom", "capability.temperatureMeasurement", title: "Select Room Temperature Sensor", submitOnChange: false, required: true, multiple: false
+            input "temperatureSensorOutside", "capability.temperatureMeasurement", title: "Select Outside Temperature Sensor", submitOnChange: false, required: false, multiple: false
 			input "switch", "capability.switch", title: "Select Switch", submitOnChange: false, required: true, multiple: false
 			input "dashboard", "capability.variable", title: "Select Dashboard", submitOnChange: false, required: true, multiple: false
 		}
+        section(){ 
+            paragraph("Use the following URI to access the page: <a href='${uri}'>${uri}</a>")
+        }
 	}
 }
 
@@ -37,20 +43,13 @@ def handler(evt) {
 }
 
 def mainPage() {
-    if(!state.accessToken){	
-        //enable OAuth in the app settings or this call will fail
-        createAccessToken()	
-    }
-    
     def uri = getFullLocalApiServerUrl() + "/?access_token=${state.accessToken}"
     
     def vars = getAllGlobalVars()
     log.debug "vars ${vars}"
 
     return dynamicPage(name: "setupScreen", uninstall: true, install: true){
-        section(){ 
-            paragraph("Use the following URI to access the page: <a href='${uri}'>${uri}</a>")
-        }
+
     }
 }
 
@@ -84,11 +83,11 @@ def doSetRoom() {
     def body = parseJson(request.body)
 
     if (body.targetTemperature) {
-        state.userTargetTemperature = new Float("${body.targetTemperature}f")
-        log.debug("new user temperature: ${body.targetTemperature} -> ${state.userTargetTemperature}")
+        state.demand.temperature = new Float("${body.targetTemperature}f")
+        log.debug("new user temperature: ${body.targetTemperature} -> ${state.demand.temperature}")
     }
     
-    tick()
+    state.demandSource = "user"
 
     render status: 200
 }
@@ -104,11 +103,11 @@ def renderRoomResponse() {
 }
 
 def getCurrentRoomHumidity() {
-    return settings.temperatureSensor.currentValue("humidity")
+    return settings.temperatureSensorRoom.currentValue("humidity")
 }
 
 def getCurrentRoomTemperature() {
-    return settings.temperatureSensor.currentValue("temperature")
+    return settings.temperatureSensorRoom.currentValue("temperature")
 }
 
 def getTargetTemperature() {
@@ -139,8 +138,6 @@ def renderStatusUpdates() {
     render data: "{}", contentType: "application/json", status: 200
 }
 
-
-
 def setHeatDemand(demand) {
     if (demand) {
         settings.switch.on()
@@ -149,65 +146,44 @@ def setHeatDemand(demand) {
     }
 }
 
+def sendStatus() {
+    def status = "{\"demand\":{\"status\":${getCurrentDemandState()},\"targetTemperature\":${state.demand.temperature}},\"monitors\":{\"room\":{\"temperature\":${settings.temperatureSensorRoom.currentValue("temperature")},\"humidity\":${settings.temperatureSensorRoom.currentValue("humidity")}},\"outside\":{\"temperature\":${settings.temperatureSensorOutside.currentValue("temperature")},\"humidity\":${settings.temperatureSensorOutside.currentValue("humidity")}}}}"
+    sendEvent(name: "status", value: status, type: "heating-control")
+}
 
 def tick(data) {
     now = new Date()
     dayOfWeek = now[Calendar.DAY_OF_WEEK]
     
-    scheduledTemperature = state.baselineTemperature
-    scheduleEnd = 0
     isScheduleActive = false
-    demandSource = "schedule"
-    
-    state.heatingSchedule.each{ scheduleItem -> 
+   
+    state.heatingSchedule.each{ scheduleItem ->
         if (scheduleItem.day == dayOfWeek) {
-            if (now.getHours() >= scheduleItem.start.hour && now.getHours() < scheduleItem.end.hour) {
-                scheduledTemperature = scheduleItem.targetTemperature
-                scheduleEnd = scheduleItem.end.hour
-                isScheduleActive = true
+            if (state.isScheduleActive) {
+                if (now.getHours() < scheduleItem.start.hour || now.getHours() > scheduleItem.end.hour) {
+                    state.demand.temperature = state.baselineTemperature
+                    state.isScheduleActive = false
+                }
+            } else {
+                if (now.getHours() >= scheduleItem.start.hour && now.getHours() < scheduleItem.end.hour) {
+                    state.demand.temperature = scheduleItem.targetTemperature
+                    state.isScheduleActive = true
+                }
             }
         }
     }
-    
-    if (isScheduleActive) {
-        // A schedule is active
 
-        // Manage transition to Inactive
-        if (state.demand.scheduled.isActive == false) {
-            // if user set temp then cancel and revert to baseline
-            state.userTargetTemperature = scheduledTemperature
-        }
-
-        state.demand.scheduled = [ isActive: true ]
-    } else {
-        // There is no heating scheduled at the moment
-
-        // Manage transition to Inactive
-        if (state.demand.scheduled.isActive == true) {
-            // if user set temp then cancel and revert to baseline
-            state.userTargetTemperature = state.baselineTemperature
-        }
-
-        state.demand.scheduled = [ isActive: false ]
-    }
-    
-    
-    
-    log.debug("scheduledTemperature: ${scheduledTemperature}")
-    log.debug("state.userTargetTemperature: ${state.userTargetTemperature}")
-            
-    state.targetTemperature = state.userTargetTemperature
+    log.debug("hour: ${now.getHours()}, day: ${dayOfWeek}, isScheduleActive: ${state.isScheduleActive}")
+    log.debug("state: ${state}")
+ 
     def currentTemperature = getCurrentRoomTemperature()
-    def targetTemperatureWithOverrun = state.targetTemperature * 1.01 // add 1%
-    log.debug("targetTemperatureWithOverrun: ${targetTemperatureWithOverrun}")
     
     def demandNeeded = false
-    if (targetTemperatureWithOverrun > currentTemperature) {
+    if (state.demand.temperature > currentTemperature) {
         demandNeeded = true
     }
     
     def currentDemandState = getCurrentDemandState()
-    log.debug("demand switch is on: ${currentDemandState}, demand needed: ${demandNeeded}")
 
     if (currentDemandState == true && demandNeeded == false) {
         log.debug("setting heat demand to off")
@@ -219,10 +195,10 @@ def tick(data) {
         settings.switch.on()
     }
 
-    updateItemStatus("demandStatus", currentDemandState)
-    updateItemStatus("targetTemperature", "{\"temperature\":${targetTemperature},\"source\":\"schedule\"}")
-    updateItemStatus("humidity", getCurrentRoomHumidity())
-    updateItemStatus("temperature", getCurrentRoomTemperature())
+//    updateItemStatus("demandStatus", currentDemandState)
+//    updateItemStatus("targetTemperature", "{\"temperature\":${targetTemperature},\"source\":\"${state.demandSource}\"}")
+//    updateItemStatus("humidity", getCurrentRoomHumidity())
+//    updateItemStatus("temperature", getCurrentRoomTemperature())
 }
 
 def installed() {
@@ -239,26 +215,30 @@ def updated() {
 def initialize() {
     unschedule()
     def heatingSchedule =  [
-        [day: 0, targetTemperature: 18f, start: [hour: 18], end: [hour: 21]],
-        [day: 1, targetTemperature: 18f, start: [hour: 18], end: [hour: 21]],
-        [day: 2, targetTemperature: 18f, start: [hour: 18], end: [hour: 21]],
-        [day: 3, targetTemperature: 18f, start: [hour: 18], end: [hour: 21]],
-        [day: 4, targetTemperature: 18f, start: [hour: 18], end: [hour: 21]],
-        [day: 5, targetTemperature: 18f, start: [hour: 18], end: [hour: 21]],
-        [day: 6, targetTemperature: 18f, start: [hour: 18], end: [hour: 21]],
+        //[day: 0, targetTemperature: 17, start: [hour: 19], end: [hour: 22]],
+        [day: 1, targetTemperature: 17, start: [hour: 19], end: [hour: 22]],
+        [day: 2, targetTemperature: 17, start: [hour: 19], end: [hour: 22]],
+        [day: 3, targetTemperature: 17, start: [hour: 19], end: [hour: 22]],
+        [day: 4, targetTemperature: 17, start: [hour: 19], end: [hour: 22]],
+        [day: 5, targetTemperature: 17, start: [hour: 19], end: [hour: 22]],
+        [day: 6, targetTemperature: 17, start: [hour: 19], end: [hour: 22]],
+        [day: 7, targetTemperature: 17, start: [hour: 19], end: [hour: 22]],
     ]
     
     log.debug(heatingSchedule)
     
-    state.baselineTemperature = 12f
-    state.demandTemperature = state.baselineTemperature
-    state.heatingSchedule = heatingSchedule
     state.demand = [ scheduled: [ isActive: false ] as Map] as Map
+    state.baselineTemperature = 12f
+    state.demand.temperature = state.baselineTemperature
+    state.heatingSchedule = heatingSchedule
     state.attributes = [:]
+    state.isScheduleActive = false
 
-    
-    cronSchedule = "0,5,10,15,20,25,30,35,40,45,50,55 * * ? * *"
-    schedule(cronSchedule, tick)
+    schedule("0,15,30,45 * * ? * *", tick)
+    schedule("0,5,10,15,20,25,30,35,40,45,50,55 * * ? * *", sendStatus)
+	
+	if (state.accessToken == null)
+		createAccessToken()
 }
 
 def averageHumid() {

@@ -17,6 +17,7 @@ const Dashboard = () => {
 
     return (
         <StoreContext.Provider value={store}>
+            <WebSocketWorker />
             <div className={css.dashboard}>
                 <div className={css.titleBar}>
                     <div>Living Room</div>
@@ -26,7 +27,7 @@ const Dashboard = () => {
                     <TemperatureAndHumidity />
                     <HeatStatus />
                     <TargetTemperature setTargetTemperature={setTargetTemperature} />
-                    <WebSocketWorker />
+                    <TemperatureAndHumidity location="outside" />
                     {/* <Boost /> */}
                 </div>
                 <button className={css.refreshButton} onClick={refresh}>&nbsp;</button>
