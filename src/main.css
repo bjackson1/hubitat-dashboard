@@ -3,8 +3,8 @@ body {
     background: url('https://raw.githubusercontent.com/bjackson1/hubitat-dashboard/main/backgrounds/milky-way.jpeg');
     background-position: center;
     background-size: cover;
-*/
-    background-color: rgb(10, 30, 40);
+    */
+    background-color: rgb(15,15,15);
     color: rgb(240, 240, 240);
     font-family: 'Helvetica';
     margin: 0;
