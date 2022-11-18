@@ -8,9 +8,7 @@ const Clock = () => {
     const interval = setInterval(() => setTime(dayjs()), 1000)
     useEffect(() => () => clearInterval(interval), [])
 
-    const formatted = time.format('dddd Do MMMM YYYY, HH:mm')
-
-    return formatted.substring(0, formatted.length - 3)
+    return time.format('dddd Do MMMM YYYY, HH.mm')
 }
 
 export default Clock
