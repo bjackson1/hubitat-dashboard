@@ -5,7 +5,15 @@ import config from '../config'
 const useSocket = () => {
     const [message, setMessage] = useState({})
 
-    const { lastJsonMessage } = useWebSocket(config.webSocketUrl)
+    const { lastJsonMessage } = useWebSocket(
+        config.webSocketUrl,
+        {
+            shouldReconnect: closeEvent => {
+                console.log({closeEvent})
+                return true
+            },
+        }
+    )
 
     useEffect(() => {
         if (lastJsonMessage !== null) {
