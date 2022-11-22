@@ -1,13 +1,14 @@
 definition(
-    name: "Central Heating Controller - DEV",
+    name: "Central Heating Controller Child - DEV",
     namespace: "brett",
+    parent: "brett:Central Heating Controller Parent - DEV",
     author: "Brett Jackson",
     description: "test",
     category: "Convenience",
     iconUrl: "",
     iconX2Url: "",
     iconX3Url: "",
-	singleInstance: true
+	singleInstance: false
 )
 
 preferences {
@@ -62,6 +63,11 @@ mappings {
 
 jsSource = "https://raw.githubusercontent.com/bjackson1/hubitat-dashboard/main/dist/index.js"
 
+def renderDashboard() {
+    data = "<html><head><script defer=\"defer\" src=\"${getFullLocalApiServerUrl()}/static/dashboard.js?access_token=${state.accessToken}\"></script></head><body><div id=\"root\"></div></body></html>";
+    render contentType: "text/html", data: data, status: 200;
+}
+
 def renderDashboardJS() {
     httpGet([
         uri: jsSource
@@ -74,11 +80,6 @@ def renderDashboardJS() {
     }
 }
 
-def renderDashboard() {
-    data = "<html><head><script defer=\"defer\" src=\"${getFullLocalApiServerUrl()}/static/dashboard.js?access_token=${state.accessToken}\"></script></head><body><div id=\"root\"></div></body></html>";
-    render contentType: "text/html", data: data, status: 200;
-}
-
 def doSetRoom() {
     def body = parseJson(request.body)
 
@@ -88,6 +89,8 @@ def doSetRoom() {
     }
     
     state.demandSource = "user"
+    checkDemandState()
+    sendStatus()
 
     render status: 200
 }
@@ -151,7 +154,7 @@ def sendStatus() {
     sendEvent(name: "status", value: status, type: "heating-control")
 }
 
-def tick(data) {
+def checkSchedule(data) {
     now = new Date()
     dayOfWeek = now[Calendar.DAY_OF_WEEK]
     
@@ -163,19 +166,23 @@ def tick(data) {
                 if (now.getHours() < scheduleItem.start.hour || now.getHours() > scheduleItem.end.hour) {
                     state.demand.temperature = state.baselineTemperature
                     state.isScheduleActive = false
+                    log.debug("Schedule end")
                 }
             } else {
                 if (now.getHours() >= scheduleItem.start.hour && now.getHours() < scheduleItem.end.hour) {
                     state.demand.temperature = scheduleItem.targetTemperature
                     state.isScheduleActive = true
+                    log.debug("Schedule start")
                 }
             }
         }
     }
 
-    log.debug("hour: ${now.getHours()}, day: ${dayOfWeek}, isScheduleActive: ${state.isScheduleActive}")
-    log.debug("state: ${state}")
- 
+//    log.debug("hour: ${now.getHours()}, day: ${dayOfWeek}, isScheduleActive: ${state.isScheduleActive}")
+//    log.debug("state: ${state}")
+}
+
+def checkDemandState() {
     def currentTemperature = getCurrentRoomTemperature()
     
     def demandNeeded = false
@@ -186,19 +193,14 @@ def tick(data) {
     def currentDemandState = getCurrentDemandState()
 
     if (currentDemandState == true && demandNeeded == false) {
-        log.debug("setting heat demand to off")
+        log.debug("setting heat demand to off, current temperature: ${currentTemperature}, demanded temperature: ${state.demand.temperature}")
         settings.switch.off()
     }
     
     if (currentDemandState == false && demandNeeded == true) {
-        log.debug("setting heat demand to on")
+        log.debug("setting heat demand to on, current temperature: ${currentTemperature}, demanded temperature: ${state.demand.temperature}")
         settings.switch.on()
     }
-
-//    updateItemStatus("demandStatus", currentDemandState)
-//    updateItemStatus("targetTemperature", "{\"temperature\":${targetTemperature},\"source\":\"${state.demandSource}\"}")
-//    updateItemStatus("humidity", getCurrentRoomHumidity())
-//    updateItemStatus("temperature", getCurrentRoomTemperature())
 }
 
 def installed() {
@@ -215,7 +217,6 @@ def updated() {
 def initialize() {
     unschedule()
     def heatingSchedule =  [
-        //[day: 0, targetTemperature: 17, start: [hour: 19], end: [hour: 22]],
         [day: 1, targetTemperature: 17, start: [hour: 19], end: [hour: 22]],
         [day: 2, targetTemperature: 17, start: [hour: 19], end: [hour: 22]],
         [day: 3, targetTemperature: 17, start: [hour: 19], end: [hour: 22]],
@@ -234,7 +235,8 @@ def initialize() {
     state.attributes = [:]
     state.isScheduleActive = false
 
-    schedule("0,15,30,45 * * ? * *", tick)
+    schedule("0 * * ? * *", checkSchedule)
+    schedule("5 * * ? * *", checkDemandState)
     schedule("0,5,10,15,20,25,30,35,40,45,50,55 * * ? * *", sendStatus)
 	
 	if (state.accessToken == null)

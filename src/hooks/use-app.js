@@ -1,8 +1,8 @@
 import hubitat from '../lib/hubitat'
 
 const useApp = () => {
-    const setTargetTemperature = async targetTemperature => {
-        await hubitat.setTargetTemperature(targetTemperature)
+    const setTargetTemperature = async (zoneId, targetTemperature) => {
+        await hubitat.setTargetTemperature(zoneId, targetTemperature)
     }
 
     return { setTargetTemperature }

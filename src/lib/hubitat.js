@@ -8,11 +8,11 @@ const getRoom = async () => {
     return body
 }
 
-const setTargetTemperature = async targetTemperature => {
+const setTargetTemperature = async (zoneId, targetTemperature) => {
     const response = await fetch(urlBuilder(), { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ targetTemperature }), 
+        body: JSON.stringify({ zoneId, targetTemperature }), 
     })
     return response.status === 200
 }
