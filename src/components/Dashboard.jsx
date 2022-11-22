@@ -4,7 +4,7 @@ import { StoreContext } from 'storeon/react'
 import useApp from '../hooks/use-app'
 import store from './store'
 
-import { Boost, HeatStatus, Reloader, TargetTemperature, TemperatureAndHumidity } from './tiles'
+import { Boost, HeatStatus, Reloader, TargetTemperature, TemperatureAndHumidity, Zone } from './tiles'
 import Clock from './Clock'
 import WebSocketWorker from './WebSocketWorker'
 
@@ -12,6 +12,8 @@ import css from './Dashboard.module.css'
 
 const Dashboard = () => {
     const { setTargetTemperature } = useApp()
+
+    const zones = window?.heatingZones?.map(zone => <Zone id={zone.id} label={zone.label} setTargetTemperature={setTargetTemperature} />) || []
 
     return (
         <StoreContext.Provider value={store}>
@@ -22,10 +24,11 @@ const Dashboard = () => {
                     <div><Clock /></div>
                 </div>
                 <div className={css.tiles}>
-                    <TemperatureAndHumidity />
+                    {/* <TemperatureAndHumidity />
                     <HeatStatus />
                     <TargetTemperature setTargetTemperature={setTargetTemperature} />
-                    <TemperatureAndHumidity location="outside" />
+                    <TemperatureAndHumidity location="outside" /> */}
+                    {zones}
                     <Reloader />
                 </div>
             </div>

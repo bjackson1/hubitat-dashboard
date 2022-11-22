@@ -4,13 +4,13 @@ import tilesCss from './tiles.module.css'
 
 import TileWrapper from './TileWrapper'
 
-const HeatStatus = () => {
+const HeatStatus = ({ zoneId }) => {
+    const { [`zone.${zoneId}`]: zone } = useStoreon(`zone.${zoneId}`)
     const title = 'Heat Demand'
-	const { room } = useStoreon('room')
 
-    if (!room) return <TileWrapper title={title}>Loading...</TileWrapper>
+    if (!zone) return <TileWrapper title={title}>Loading...</TileWrapper>
 
-    const demandStatus = room?.demand?.status
+    const demandStatus = zone?.demand?.status
 
     return (
         <TileWrapper title={title}>

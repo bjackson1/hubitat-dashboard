@@ -4,6 +4,7 @@ import Reloader from './Reloader'
 import TargetTemperature from './TargetTemperature'
 import TemperatureAndHumidity from './TemperatureAndHumidity'
 import TileWrapper from './TileWrapper'
+import Zone from './Zone'
 
 export {
     Boost,
@@ -12,4 +13,5 @@ export {
     TargetTemperature,
     TemperatureAndHumidity,
     TileWrapper,
+    Zone,
 }

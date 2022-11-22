@@ -7,7 +7,10 @@ const WebSocketWorker = () => {
     const { message } = useSocket()
 	const { dispatch } = useStoreon('dispatch')
 
-    if (message) dispatch(enums.room.update, message)
+    if (message) {
+        // dispatch(enums.room.update, message)
+        dispatch(enums.zone.update, message)
+    }
 }
 
 export default WebSocketWorker

@@ -19,7 +19,8 @@ const config = {
     url: window.location.host === 'localhost:3000' ? 'http://localhost:3001/apps/api' : `${window.location.origin}/apps/api`,
     accessToken: getAccessToken(),
     apiId: getApiId(),
-    webSocketUrl: window.location.host === 'localhost:3000' ? 'ws://192.168.50.11/eventsocket' : `ws://${window.location.host}/eventsocket`
+    webSocketUrl: window.location.host === 'localhost:3000' ? 'ws://192.168.50.11/eventsocket' : `ws://${window.location.host}/eventsocket`,
+    zones: window.heatingZones,
 }
 
 export default config

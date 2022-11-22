@@ -9,7 +9,10 @@ export default {
     room: {
         update: 'room/update',
     },
+    zone: {
+        update: 'zone/update',
+    },
     targetTemperature: {
         update: 'target-temperature/update'
-    }
+    },
 }
