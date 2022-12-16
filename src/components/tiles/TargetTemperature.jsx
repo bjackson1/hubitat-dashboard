@@ -23,7 +23,7 @@ const TargetTemperature = ({ setTargetTemperature, zoneId }) => {
 
     const setNewTemperature = newTemperature => {
         setRequestedTemperature(newTemperature)
-        setTargetTemperature(newTemperature)
+        setTargetTemperature(zoneId, newTemperature)
 
         timeoutIds.forEach(clearTimeout)
         const id = setTimeout(() => setRequestedTemperature(null), 10000)
